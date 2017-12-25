@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"target": "es6",
+		"module": "commonjs",
+
+		"types": ["node"],
+
+		"sourceMap": true,
+		"declaration": true,
+
+		"strict": true,
+		"noImplicitAny": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"importHelpers": true,
+		"downlevelIteration": true,
+		"moduleResolution": "node",
+
+		"rootDir": "src/typescript",
+		"outDir": "build/javascript"
+	},
+	"include": [
+		"src/typescript/**/*.ts"
+	]
+}

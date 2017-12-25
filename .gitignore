@@ -1,0 +1,9 @@
+.DS_Store
+
+.idea/
+.gradle/
+build/
+node_modules/
+
+yarn-error.log
+

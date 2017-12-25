@@ -1,0 +1,42 @@
+plugins {
+	id 'org.jetbrains.kotlin.jvm' version '1.2.10'
+	id 'org.jmailen.kotlinter' version '1.6.0'
+}
+
+apply plugin: 'kotlin'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+sourceSets.main.java.srcDirs += 'src/kotlin'
+project.buildDir = 'build/kotlin'
+
+configurations {
+    provided
+    compile.extendsFrom provided
+}
+
+dependencies {
+    compile 'org.jetbrains.kotlin:kotlin-stdlib-jre8:1.2.10'
+
+    // On the plugin we use NPM to let the user choose the closure-compiler version
+    provided 'com.google.javascript:closure-compiler:v20171203'
+}
+
+// Create a single Jar with the Kotlin runtime
+jar {
+    dependsOn configurations.runtime
+	archiveName = 'runtime.jar'
+    from {
+        (configurations.runtime - configurations.provided).collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = '1.8'
+}
