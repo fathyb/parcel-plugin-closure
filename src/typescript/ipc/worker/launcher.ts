@@ -8,7 +8,7 @@ process.on('message', async (message: RequestMessage<{}>) => {
 	const {id, method} = message
 
 	try {
-		const result = handler[message.method](message.data)
+		const result = await handler[message.method](message.data)
 		const response: ResponseMessage<{}> = {
 			id, method, type: 'response', data: {result, error: null}
 		}
@@ -16,7 +16,7 @@ process.on('message', async (message: RequestMessage<{}>) => {
 		process.send!(response)
 	}
 	catch(err) {
-		const error = err ? (err.message || err) : 'Unknown error'
+		const error = err ? (err.stack || err.message || err) : 'Unknown error'
 		const response: ResponseMessage<{}> = {
 			id, method, type: 'response', data: {error, result: null}
 		}

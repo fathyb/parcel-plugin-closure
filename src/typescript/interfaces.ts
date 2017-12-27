@@ -10,3 +10,19 @@ export interface Bundle {
 	publicURL: string
 	exports: string[]|null
 }
+
+export interface ProcessedFile {
+	path: string
+	contents: string|null
+	packageFile: string|null
+}
+
+export interface Request {
+	addBundle: Bundle
+	addFile: ProcessedFile
+}
+
+export interface Response {
+	addBundle: void
+	addFile: void
+}

@@ -1,11 +1,12 @@
 {
   "name": "parcel-plugin-closure",
-  "version": "0.0.1",
+  "version": "0.0.2-next.4",
   "description": "Closure Compiler integration for Parcel",
   "author": "Fathy Boundjadj <fathy.boundjadj@gmail.com>",
   "license": "MIT",
   "main": "build/javascript/index",
   "files": [
+    "src",
     "build/kotlin/libs/runtime.jar",
     "build/javascript"
   ],
@@ -13,7 +14,8 @@
     "build:ts": "tsc",
     "build:kt": "./gradlew build",
     "build": "run-p build:*",
-    "lint": "tslint --project ."
+    "lint:ts": "tslint --project .",
+    "ts": "run-p *:ts"
   },
   "peerDependencies": {
     "google-closure-compiler": "^20171203.0.0",

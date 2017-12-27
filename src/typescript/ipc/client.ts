@@ -1,12 +1,11 @@
 import rp = require('request-promise')
 
-import {Bundle} from '../interfaces'
+import {Bundle, Request, Response} from '../interfaces'
 
 import {getSocketPath} from './dynamic'
-import {Request, Response} from './protocol'
 
-async function request<K extends keyof Request.Map, R extends Response.Map[K]>(
-	endpoint: K, data: Request.Map[K]
+async function request<K extends keyof Request, R extends Response[K]>(
+	endpoint: K, data: Request[K]
 ): Promise<R> {
 	const response: {result?: R, error?: any} = await rp({
 		uri: `http://unix:${getSocketPath()}:/${endpoint}`,
@@ -23,9 +22,9 @@ async function request<K extends keyof Request.Map, R extends Response.Map[K]>(
 }
 
 export async function addBundle(bundle: Bundle): Promise<void> {
-	await request('addBundle', {bundle})
+	return request('addBundle', bundle)
 }
 
 export async function addFile(path: string, contents: string|null, packageFile: string|null): Promise<void> {
-	await request('addFile', {path, contents, packageFile})
+	return request('addFile', {path, contents, packageFile})
 }

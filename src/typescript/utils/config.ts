@@ -4,7 +4,7 @@ import rc = require('rc')
 const APP_NAME = 'parcelclosure'
 
 export interface BundleConfiguration {
-	optimization: 'simple'|'advanced'
+	optimization: 'simple'|'advanced'|'uglify'
 	exports: string[]|null
 }
 

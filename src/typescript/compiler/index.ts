@@ -1,8 +1,11 @@
+// TODO: refactor everything when stable
+
 import {dirname, join} from 'path'
 
 import findNodeModules = require('find-node-modules')
 
-import {Bundle} from '../interfaces'
+import {Bundle, Request} from '../interfaces'
+import {Handler} from '../ipc'
 import {readFile, writeFile} from '../utils/fs'
 
 import {createClosureWrapper} from './api'
@@ -20,11 +23,11 @@ function optionalResolve(...paths: string[]): string[] {
 		.filter(path => !!path) as string[]
 }
 
-export class Bridge {
-	private wrapper = createClosureWrapper()
+export class Bridge implements Handler<Request, Response> {
 	private readonly pendingBundles: Bundle[] = []
+	private readonly mappings: {[path: string]: string} = {}
+	private wrapper = createClosureWrapper()
 	private loaderPath: string|null = null
-	private mappings: {[path: string]: string} = {}
 
 	public async addBundle(bundle: Bundle): Promise<void> {
 		this.pendingBundles.push(bundle)
@@ -80,7 +83,9 @@ export class Bridge {
 		}
 	}
 
-	public async addFile(path: string, contents: string|null, pkgFile: string|null) {
+	public async addFile(
+		{contents, packageFile, path}: {path: string, contents: string|null, packageFile: string|null}
+	) {
 		if(!this.loaderPath) {
 			const nodeModules = findNodeModules({
 				cwd: dirname(path),
@@ -105,7 +110,7 @@ export class Bridge {
 			})
 		}
 
-		return (await this.wrapper).addFile(path, contents, pkgFile, null)
+		return (await this.wrapper).addFile(path, contents, packageFile, null)
 	}
 
 	private async commitMappings() {
@@ -221,7 +226,7 @@ export class Bridge {
 		let root: Bundle|null = null
 
 		for(const bundle of bundles) {
-			if(!bundle.parent) {
+			if(!bundle.parent || /\.html$/.test(bundle.parent)) {
 				if(root) {
 					throw new Error('Multiple parent bundles')
 				}

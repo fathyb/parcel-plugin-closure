@@ -9,13 +9,16 @@ export = (url: string) => {
 		const script = document.createElement('script')
 		const name = url.split('/').pop()!.replace(/\.js$/, '')
 
+		script.async = true
 		script.src = url
 		script.onerror = reject
 
-		listeners.set(name, (e: any) => {
+		listeners.set(name, (exported: any) => {
 			const renamed: StringMap = {}
 
-			Object.keys(e).forEach(alias => renamed[renamings[alias]] = e[alias])
+			Object.keys(exported).forEach(alias =>
+				renamed[renamings[alias]] = exported[alias]
+			)
 
 			resolve(renamed)
 		})
@@ -43,12 +46,15 @@ const mappings: StringMap = __REPLACE_MAPPINGS
 const renamings: StringMap = __REPLACE_RENAMINGS
 
 ctx.require = {
-	resolve: (path: string): string => mappings[path]
+	resolve: (path: string) => mappings[path.replace(/^\.\//, '')]
 }
-ctx.__C = function(name: string, exports: any): void {
+ctx.__C = function(name: string, exported: any): void {
 	const listener = listeners.get(name)
 
 	if(listener) {
-		listener(exports)
+		listener(exported)
+	}
+	else {
+		console.warn('Unknown bundle %s', name)
 	}
 }

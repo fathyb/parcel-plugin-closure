@@ -5,8 +5,9 @@ Closure compiler based packager for Parcel
 ## Prerequisites
 
 - Java's JDK 8 (*not the JRE*), and the `JAVA_HOME` environment variable defined
+- `google-closure-compiler` and `parcel-bundler` installed locally
 
-`closure-compiler-js` is not supported for now.
+`closure-compiler-js` is not supported because it does not support modules (used for Parcel code-splitting).
 
 ## Usage
 
@@ -20,7 +21,7 @@ or
 
 ## Configuration
 
-You can pass a configuration in a `.parcelclosurerc` file in the root of your project.
+You can pass an optional configuration in a `.parcelclosurerc` file in the root of your project.
 
 ```js
 {
@@ -57,10 +58,21 @@ It already includes the basic `externs` needed if Angular is detected.
 
 ## Development
 
-### Kotlin part
+This plugin is divided in two part :
+- A simple Closure wrapper running in a Java virtual-machine, we need it mainly for the virtual file-system (we give it files as processed by Parcel, not from from the disk)
+- The Parcel plugin, it contains a Parcel packager and a JavaScript asset. It calls the Closure wrapper using `node-java`.
 
-Run `yarn build:kt` to build the jar in `build/kotlin/libs`
+### Java part (Kotlin)
 
-### TypeScript part
+You need the Java JDK 8 and Gradle 2.4+ installed.
 
-Run `yarn build:ts` to build the JavaScript files to `build/javascript`
+- Download the Gradle wrapper : `gradle wrapper --gradle-version 4.4.1`
+- Build the jar in `build/kotlin/libs` : `./gradlew build`
+
+### JavaScript part (TypeScript)
+
+You need Node.js 8+ and Yarn installed.
+You can use `npm` instead of `yarn` but it will make your setup non-reproductible.
+
+- Fetch the dependencies: `yarn` or `npm install`
+- Build the JavaScript files in `build/javascript` : `yarn build:ts` or `npm run build:ts`

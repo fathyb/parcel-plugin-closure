@@ -1,12 +1,7 @@
 import {ChildProcess, fork} from 'child_process'
 
 import {Emitter} from '../../utils/emitter'
-
-export type BothKeys<T, U> = (keyof T) & (keyof U)
-
-export type Handler<RQ, RS, K extends BothKeys<RQ, RS> = BothKeys<RQ, RS>> = {
-	[P in K]: (data: RQ[P]) => Promise<RS[P]>
-}
+import {Keys} from '../handler'
 
 export interface RequestMessage<R, K extends keyof R = keyof R> {
 	type: 'request'
@@ -28,14 +23,16 @@ export interface ResponseMessage<R, K extends keyof R = keyof R> {
 	}
 }
 
-type Message<RQ, RS, K extends BothKeys<RQ, RS> = BothKeys<RQ, RS>> = RequestMessage<RQ, K> | ResponseMessage<RS, K>
+type Message<RQ, RS, K extends Keys<RQ, RS> = Keys<RQ, RS>> = RequestMessage<RQ, K> | ResponseMessage<RS, K>
 
-export class Worker<RQ, RS, K extends BothKeys<RQ, RS> = BothKeys<RQ, RS>> {
+export class Worker<RQ = {}, RS = {}, K extends Keys<RQ, RS> = Keys<RQ, RS>> {
 	private readonly onMessage = new Emitter<Message<RQ, RS>>()
 	private readonly child: ChildProcess
 
 	constructor(path: string) {
-		this.child = fork(require.resolve('./launcher'), [path])
+		this.child = fork(require.resolve('./launcher'), [path], {
+			env: process.env
+		})
 
 		this.child.on('message', message => this.onMessage.emit(message))
 	}
@@ -53,8 +50,9 @@ export class Worker<RQ, RS, K extends BothKeys<RQ, RS> = BothKeys<RQ, RS>> {
 			throw new Error(`invariant error, received "${result.method}" response, expected "${method}"`)
 		}
 
-		if(result.data.error === null && result.data.result !== null) {
-			return result.data.result
+		// TODO: why result is null
+		if(result.data.error === null) {
+			return result.data.result!
 		}
 
 		throw new Error(result.data.error || 'Unknown error')

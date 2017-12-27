@@ -7,3 +7,6 @@ node_modules/
 
 yarn-error.log
 
+/gradlew
+/gradlew.bat
+/gradle/

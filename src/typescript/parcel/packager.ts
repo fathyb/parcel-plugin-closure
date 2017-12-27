@@ -1,8 +1,9 @@
 import {basename} from 'path'
 
 import Packager = require('parcel-bundler/lib/packagers/Packager')
+import JSPackager = require('parcel-bundler/src/packagers/JSPackager')
 
-import {addBundle, addFile} from '../ipc/client'
+import {addBundle, addFile} from '../ipc'
 import {getBundleConfig} from '../utils/config'
 
 function normalize(asset: any) {
@@ -18,10 +19,6 @@ class ClosurePackager extends Packager {
 	private readonly packages = new Set<string>()
 	private readonly childs: string[] = []
 	private readonly promises: Array<Promise<void>> = []
-
-	constructor(bundle: any, bundler: any) {
-		super(bundle, bundler)
-	}
 
 	public setup() {
 		return
@@ -64,7 +61,7 @@ class ClosurePackager extends Packager {
 			this.files.push(path)
 
 			if (!/node_modules\/rxjs/.test(asset.name)) {
-				this.promises.push(addFile(path, asset.generated.js, pkgfile))
+				this.promises.push(Promise.resolve(await addFile(path, asset.generated.js, pkgfile)))
 			}
 		}
 
@@ -78,4 +75,13 @@ class ClosurePackager extends Packager {
 	}
 }
 
-export = ClosurePackager
+export = function(bundle: any, bundler: any) {
+	const config = bundle.entryAsset && getBundleConfig(bundle.entryAsset.name)
+
+	if(config && config.optimization === 'uglify') {
+		return new JSPackager(bundle, bundler)
+	}
+	else {
+		return new ClosurePackager(bundle, bundler)
+	}
+}

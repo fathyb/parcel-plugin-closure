@@ -1,21 +1,25 @@
 package org.fathyb.parcel.closure
 
 import com.google.gson.Gson
+import com.google.javascript.jscomp.AbstractCommandLineRunner
 import com.google.javascript.jscomp.CompilationLevel
+import com.google.javascript.jscomp.Compiler
 import com.google.javascript.jscomp.CompilerOptions
+import com.google.javascript.jscomp.DependencyOptions
 import com.google.javascript.jscomp.ModuleIdentifier
 import com.google.javascript.jscomp.SourceFile
 import com.google.javascript.jscomp.WarningLevel
 import com.google.javascript.jscomp.deps.ModuleLoader
 
-internal class CompilerRegistry(private val host: FileHost, private val level: CompilationLevel) {
-	private val entry = CompilerEntry()
+internal class CompilerRunner(private val host: FileHost, private val level: CompilationLevel) {
 	private val entryPoints = mutableListOf<ModuleIdentifier>()
-	val gson = Gson()
+	private val gson = Gson()
+	private val compiler = Compiler()
+	private val modules = mutableListOf<InternalModule>()
+	private val options = CompilerOptions()
+	private val dependencyMode = CompilerOptions.DependencyMode.STRICT
 
 	init {
-		val options = entry.options
-
 		level.setOptionsForCompilationLevel(options)
 		level.setTypeBasedOptimizationOptions(options)
 
@@ -26,7 +30,6 @@ internal class CompilerRegistry(private val host: FileHost, private val level: C
 		options.languageOut = CompilerOptions.LanguageMode.ECMASCRIPT5
 		options.languageIn = CompilerOptions.LanguageMode.ECMASCRIPT_NEXT
 		options.setExportLocalPropertyDefinitions(true)
-		options.removeUnusedPrototypePropertiesInExterns = false
 		options.generateExports = true
 
 		WarningLevel.QUIET.setOptionsForWarningLevel(options)
@@ -45,21 +48,19 @@ internal class CompilerRegistry(private val host: FileHost, private val level: C
 	}
 
     fun addModule(module: InternalModule) {
-        entry.modules.add(module)
+        modules.add(module)
     }
 
     fun compile(externs: List<SourceFile>): List<GeneratedFile> {
-		val compiler = entry.compiler
-		val modules = entry.modules.map { module -> module.module }
+		createDependencyOptions()
 
-		entry.apply(level, entryPoints)
-
-		val result = compiler.compileModules(externs, modules.toList(), entry.options)
+		val jsModules = modules.map { module -> module.module }
+		val result = compiler.compileModules(externs, jsModules.toList(), options)
 		val filtered = result.propertyMap?.newNameToOriginalNameMap?.filter { mapEntry ->
 			val original = mapEntry.value
 			var shouldExport = true
 
-			for(module in entry.modules) {
+			for(module in modules) {
 				if(module.exports != null) {
 					shouldExport = false
 
@@ -75,7 +76,7 @@ internal class CompilerRegistry(private val host: FileHost, private val level: C
 		}
 		val renamings = gson.toJson(filtered)
 
-		return modules.map { module ->
+		return jsModules.map { module ->
 			GeneratedFile(module.name, wrap(compiler.toSource(module), renamings))
 		}
     }
@@ -88,5 +89,32 @@ internal class CompilerRegistry(private val host: FileHost, private val level: C
 		}
 
 		return wrapped
+	}
+
+	private fun createDependencyOptions() {
+		if(entryPoints.size == 1) {
+			level.setWrappedOutputOptimizations(options)
+		}
+
+		options.dependencyOptions = DependencyOptions().setEntryPoints(entryPoints)
+
+		if(dependencyMode == CompilerOptions.DependencyMode.STRICT) {
+			if(entryPoints.isEmpty()) {
+				throw AbstractCommandLineRunner.FlagUsageException(
+					"When dependency_mode=STRICT, you must specify at least one entry point"
+				)
+			}
+
+			options.dependencyOptions
+				.setDependencyPruning(true)
+				.setDependencySorting(true)
+				.setMoocherDropping(true)
+		}
+		else if(dependencyMode == CompilerOptions.DependencyMode.LOOSE || !entryPoints.isEmpty()) {
+			options.dependencyOptions
+				.setDependencyPruning(true)
+				.setDependencySorting(true)
+				.setMoocherDropping(false)
+		}
 	}
 }

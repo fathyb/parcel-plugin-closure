@@ -92,7 +92,7 @@ internal class FileHost {
 		val fileName = "$entry.closure-virtual-entry.js"
 		val base = File(entry).name
 		val identifier = name.replace(".js", "")
-		val contents = "import * as _${identifier}_ from './$base'\n__C('$identifier', _${identifier}_)"
+		val contents = "import * as _${identifier} from './$base';__C('$identifier', _${identifier})"
 
 		cache[fileName] = FileCacheEntry(SourceFile.fromCode(fileName, contents), contents)
 
